@@ -22,4 +22,35 @@ jobs:
       - run: npm install
       - run: npm run build
 
-      
+  deploy:
+    needs: test-build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Build app on VM
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          port: ${{ secrets.PORT }}
+          script: |
+            set -e
+            eval "$(ssh-agent -s)"
+            ssh-add ~/.ssh/ssh-praktikan36
+
+            echo "Cek folder project..."
+            if [ ! -d "$HOME/senpro/540586/modul02/senpro-github-action" ]; then
+              echo "Repository belum ada. Cloning..."
+              mkdir -p "$HOME/senpro/540586/modul02"
+              cd "$HOME/senpro/540586/modul02"
+              git clone "git@github.com:${{ github.repository }}.git"
+            else
+              echo "Repository sudah ada. Building..."
+              cd "$HOME/senpro/540586/modul02/senpro-github-action"
+              git pull origin main
+            fi
+
+            echo "Install package dan build project..."
+            npm install
+            npm run build
